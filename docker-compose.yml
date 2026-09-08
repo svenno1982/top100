@@ -1,0 +1,32 @@
+services:
+  top100:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: top-100-albums
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:3004:3000"
+
+    environment:
+      DATABASE_URL: "file:/app/data/chart.db"
+      MUSICBRAINZ_USER_AGENT: "Top100Albums/1.0 (https://rkrp.co.uk)"
+      TMDB_READ_ACCESS_TOKEN: "${TMDB_READ_ACCESS_TOKEN}"
+      NODE_ENV: "production"
+
+    volumes:
+      - ./data:/app/data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/albums').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

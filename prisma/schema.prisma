@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Album {
+  id             Int      @id @default(autoincrement())
+  position       Int      @unique
+  title          String
+  artist         String
+  releaseYear    Int?
+  artworkUrl     String?
+  artworkSource  String?
+  musicBrainzId  String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Film {
+  id          Int      @id @default(autoincrement())
+  position    Int      @unique
+  title       String
+  director    String?
+  releaseYear Int?
+  posterUrl   String?
+  tmdbId      Int?     @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Song {
+  id           Int      @id @default(autoincrement())
+  position     Int      @unique
+  title        String
+  artist       String
+  releaseYear  Int?
+  artworkUrl   String?
+  appleTrackId String?  @unique
+  trackUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

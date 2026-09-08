@@ -1,0 +1,231 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+type SongRouteContext = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
+function parseSongId(value: string) {
+  const id = Number(value);
+
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function parseReleaseYear(value: unknown) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const year = Number(value);
+
+  if (
+    !Number.isInteger(year) ||
+    year < 1800 ||
+    year > 2100
+  ) {
+    return null;
+  }
+
+  return year;
+}
+
+function parseAppleTrackId(value: unknown) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const appleTrackId = String(value).trim();
+
+  return appleTrackId || null;
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: SongRouteContext,
+) {
+  try {
+    const { id: idValue } = await context.params;
+    const id = parseSongId(idValue);
+
+    if (id === null) {
+      return NextResponse.json(
+        { error: "A valid song ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const existingSong = await prisma.song.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingSong) {
+      return NextResponse.json(
+        { error: "Song not found" },
+        { status: 404 },
+      );
+    }
+
+    const body = await request.json();
+
+    const title = body.title?.trim();
+    const artist = body.artist?.trim();
+
+    if (!title || !artist) {
+      return NextResponse.json(
+        {
+          error: "Song title and artist are required",
+        },
+        { status: 400 },
+      );
+    }
+
+    const appleTrackId = parseAppleTrackId(
+      body.appleTrackId,
+    );
+
+    if (
+      appleTrackId !== null &&
+      appleTrackId !== existingSong.appleTrackId
+    ) {
+      const duplicateSong =
+        await prisma.song.findUnique({
+          where: {
+            appleTrackId,
+          },
+        });
+
+      if (duplicateSong) {
+        return NextResponse.json(
+          {
+            error:
+              "Another song in the chart already uses this Apple track",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    const song = await prisma.song.update({
+      where: {
+        id,
+      },
+      data: {
+        title,
+        artist,
+        releaseYear: parseReleaseYear(
+          body.releaseYear,
+        ),
+        artworkUrl:
+          body.artworkUrl?.trim() || null,
+        appleTrackId,
+        trackUrl: body.trackUrl?.trim() || null,
+      },
+    });
+
+    return NextResponse.json(song);
+  } catch (error) {
+    console.error("Unable to update song:", error);
+
+    return NextResponse.json(
+      { error: "Unable to update song" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  context: SongRouteContext,
+) {
+  try {
+    const { id: idValue } = await context.params;
+    const id = parseSongId(idValue);
+
+    if (id === null) {
+      return NextResponse.json(
+        { error: "A valid song ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const existingSong = await prisma.song.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingSong) {
+      return NextResponse.json(
+        { error: "Song not found" },
+        { status: 404 },
+      );
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.song.delete({
+        where: {
+          id,
+        },
+      });
+
+      const songsToShift =
+        await transaction.song.findMany({
+          where: {
+            position: {
+              gt: existingSong.position,
+            },
+          },
+          orderBy: {
+            position: "asc",
+          },
+        });
+
+      // Temporarily move the affected songs below zero
+      // to avoid unique-position collisions.
+      for (const song of songsToShift) {
+        await transaction.song.update({
+          where: {
+            id: song.id,
+          },
+          data: {
+            position: -song.position,
+          },
+        });
+      }
+
+      for (const song of songsToShift) {
+        await transaction.song.update({
+          where: {
+            id: song.id,
+          },
+          data: {
+            position: song.position - 1,
+          },
+        });
+      }
+    });
+
+    return new NextResponse(null, {
+      status: 204,
+    });
+  } catch (error) {
+    console.error("Unable to delete song:", error);
+
+    return NextResponse.json(
+      { error: "Unable to delete song" },
+      { status: 500 },
+    );
+  }
+}
