@@ -10,6 +10,7 @@ type AppleSong = {
   releaseDate?: string;
   artworkUrl100?: string;
   trackViewUrl?: string;
+  previewUrl?: string;
 };
 
 type AppleSearchResponse = {
@@ -31,16 +32,23 @@ function getReleaseYear(releaseDate?: string) {
     : null;
 }
 
-function getLargerArtworkUrl(
-  artworkUrl?: string,
-) {
+function getLargerArtworkUrl(artworkUrl?: string) {
   if (!artworkUrl) {
     return "";
   }
 
   return artworkUrl
     .replace("100x100bb", "600x600bb")
-    .replace("100x100-75", "600x600-75");
+    .replace("100x100-75", "600x600-75")
+    .replace(/^http:/, "https:");
+}
+
+function getSecureUrl(url?: string) {
+  if (!url) {
+    return null;
+  }
+
+  return url.replace(/^http:/, "https:");
 }
 
 function createResultKey(song: AppleSong) {
@@ -119,9 +127,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const results = Array.from(
-      uniqueSongs.values(),
-    )
+    const results = Array.from(uniqueSongs.values())
       .slice(0, 15)
       .map((song) => ({
         appleTrackId: String(song.trackId),
@@ -134,7 +140,8 @@ export async function GET(request: NextRequest) {
         artworkUrl: getLargerArtworkUrl(
           song.artworkUrl100,
         ),
-        trackUrl: song.trackViewUrl ?? null,
+        trackUrl: getSecureUrl(song.trackViewUrl),
+        previewUrl: getSecureUrl(song.previewUrl),
       }));
 
     return NextResponse.json(results);

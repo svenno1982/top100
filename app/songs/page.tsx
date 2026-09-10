@@ -55,12 +55,15 @@ export default async function SongsPage() {
             artworkUrl: song.artworkUrl,
             appleTrackId: song.appleTrackId,
             trackUrl: song.trackUrl,
+            previewUrl: song.previewUrl,
           }))}
         />
 
         <p className="mt-10 text-xs text-neutral-600">
           Song metadata and artwork are provided by the
-          Apple iTunes Search API.
+          Apple iTunes Search API. Audio previews are
+          provided courtesy of iTunes and streamed directly
+          from Apple.
         </p>
       </div>
     </main>

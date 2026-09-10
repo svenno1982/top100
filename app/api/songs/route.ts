@@ -37,6 +37,16 @@ function parseAppleTrackId(value: unknown) {
   return appleTrackId || null;
 }
 
+function parseOptionalUrl(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const url = value.trim();
+
+  return url ? url.replace(/^http:/, "https:") : null;
+}
+
 export async function GET() {
   try {
     const songs = await prisma.song.findMany({
@@ -140,11 +150,16 @@ export async function POST(request: NextRequest) {
               releaseYear: parseReleaseYear(
                 body.releaseYear,
               ),
-              artworkUrl:
-                body.artworkUrl?.trim() || null,
+              artworkUrl: parseOptionalUrl(
+                body.artworkUrl,
+              ),
               appleTrackId,
-              trackUrl:
-                body.trackUrl?.trim() || null,
+              trackUrl: parseOptionalUrl(
+                body.trackUrl,
+              ),
+              previewUrl: parseOptionalUrl(
+                body.previewUrl,
+              ),
             },
           });
 

@@ -12,6 +12,7 @@ type SongSearchResult = {
   releaseYear: number | null;
   artworkUrl: string;
   trackUrl: string | null;
+  previewUrl: string | null;
 };
 
 type AddSongFormProps = {
@@ -39,6 +40,7 @@ export function AddSongForm({
   const [artworkUrl, setArtworkUrl] = useState("");
   const [appleTrackId, setAppleTrackId] = useState("");
   const [trackUrl, setTrackUrl] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -106,6 +108,7 @@ export function AddSongForm({
     setArtworkUrl(song.artworkUrl);
     setAppleTrackId(song.appleTrackId);
     setTrackUrl(song.trackUrl ?? "");
+    setPreviewUrl(song.previewUrl ?? "");
 
     setSearch("");
     setResults([]);
@@ -134,6 +137,7 @@ export function AddSongForm({
           artworkUrl: artworkUrl || null,
           appleTrackId: appleTrackId || null,
           trackUrl: trackUrl || null,
+          previewUrl: previewUrl || null,
         }),
       });
 
@@ -153,6 +157,7 @@ export function AddSongForm({
       setArtworkUrl("");
       setAppleTrackId("");
       setTrackUrl("");
+      setPreviewUrl("");
 
       router.refresh();
     } catch (error) {

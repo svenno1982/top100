@@ -1,6 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   CollisionDetection,
@@ -29,6 +34,7 @@ import { ConfirmDeleteModal } from "@/components/ConfirmDeleteModal";
 
 const TOP_100_SIZE = 100;
 const OUTSIDE_DROP_ID = "outside-top-100";
+const PREVIEW_VOLUME = 0.2;
 
 const cursorCollisionDetection: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args);
@@ -49,6 +55,7 @@ export type ChartSong = {
   artworkUrl: string | null;
   appleTrackId: string | null;
   trackUrl: string | null;
+  previewUrl: string | null;
 };
 
 type SongChartProps = {
@@ -58,6 +65,8 @@ type SongChartProps = {
 type SongItemProps = {
   song: ChartSong;
   isSaving: boolean;
+  isPlaying: boolean;
+  onTogglePreview: (song: ChartSong) => void;
   onEdit: (song: ChartSong) => void;
   onDelete: (song: ChartSong) => void;
 };
@@ -91,6 +100,8 @@ function SongDragPreview({ song }: { song: ChartSong }) {
 function SongCard({
   song,
   isSaving,
+  isPlaying,
+  onTogglePreview,
   onEdit,
   onDelete,
 }: SongItemProps) {
@@ -147,6 +158,29 @@ function SongCard({
         >
           ☰
         </button>
+
+        <button
+          type="button"
+          disabled={isSaving || !song.previewUrl}
+          onClick={() => onTogglePreview(song)}
+          aria-label={`${isPlaying ? "Pause" : "Play"} preview of ${song.title}`}
+          title={
+            song.previewUrl
+              ? isPlaying
+                ? "Pause preview"
+                : "Play 30-second preview"
+              : "Song not available, Sorry!"
+          }
+          className={`absolute bottom-2 left-2 flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${
+            isPlaying
+              ? "border-sky-300 bg-sky-400 text-neutral-950"
+              : "border-neutral-700 bg-neutral-950/90 text-white hover:border-sky-400 hover:text-sky-300"
+          }`}
+        >
+          <span aria-hidden="true">
+            {isPlaying ? "Ⅱ" : "▶"}
+          </span>
+        </button>
       </div>
 
       <div className="p-3">
@@ -197,6 +231,8 @@ function SongCard({
 function SongListRow({
   song,
   isSaving,
+  isPlaying,
+  onTogglePreview,
   onEdit,
   onDelete,
 }: SongItemProps) {
@@ -261,6 +297,27 @@ function SongListRow({
       <div className="flex items-center justify-end gap-1">
         <button
           type="button"
+          disabled={isSaving || !song.previewUrl}
+          onClick={() => onTogglePreview(song)}
+          aria-label={`${isPlaying ? "Pause" : "Play"} preview of ${song.title}`}
+          title={
+            song.previewUrl
+              ? isPlaying
+                ? "Pause preview"
+                : "Play 30-second preview"
+              : "Song not available, Sorry!"
+          }
+          className={`rounded px-2 py-1 text-xs transition disabled:cursor-not-allowed disabled:opacity-40 ${
+            isPlaying
+              ? "bg-sky-400 text-neutral-950"
+              : "text-sky-400 hover:bg-neutral-800 hover:text-sky-300"
+          }`}
+        >
+          {isPlaying ? "Pause" : "Preview"}
+        </button>
+
+        <button
+          type="button"
           disabled={isSaving}
           onClick={() => onEdit(song)}
           className="rounded px-2 py-1 text-xs text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-50"
@@ -290,6 +347,60 @@ function SongListRow({
         </button>
       </div>
     </article>
+  );
+}
+
+function SongPreviewPlayer({
+  song,
+  onStop,
+}: {
+  song: ChartSong;
+  onStop: () => void;
+}) {
+  return (
+    <aside className="fixed bottom-4 left-1/2 z-40 flex w-[calc(100%_-_2rem)] max-w-xl -translate-x-1/2 items-center gap-3 rounded-xl border border-sky-400/60 bg-neutral-900/95 p-3 shadow-2xl shadow-black/60 backdrop-blur">
+      <AlbumArtwork
+        src={song.artworkUrl}
+        title={song.title}
+        artist={song.artist}
+        className="h-12 w-12 shrink-0 rounded-md object-cover"
+      />
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">
+          {song.title}
+        </p>
+
+        <p className="truncate text-xs text-neutral-400">
+          {song.artist}
+        </p>
+
+        <p className="mt-0.5 text-[10px] text-neutral-500">
+          Preview provided courtesy of iTunes
+        </p>
+      </div>
+
+      {song.trackUrl && (
+        <a
+          href={song.trackUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="hidden rounded-lg px-3 py-2 text-xs font-medium text-sky-400 transition hover:bg-neutral-800 hover:text-sky-300 sm:block"
+        >
+          View on Apple Music
+        </a>
+      )}
+
+      <button
+        type="button"
+        onClick={onStop}
+        aria-label={`Stop preview of ${song.title}`}
+        title="Stop preview"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-400 font-semibold text-neutral-950 transition hover:bg-sky-300"
+      >
+        <span aria-hidden="true">■</span>
+      </button>
+    </aside>
   );
 }
 
@@ -467,8 +578,12 @@ export function SongChart({
     useState<ChartSong | null>(null);
   const [activeSong, setActiveSong] =
     useState<ChartSong | null>(null);
+  const [playingSongId, setPlayingSongId] =
+    useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [previewError, setPreviewError] = useState("");
 
   useEffect(() => {
     setHasMounted(true);
@@ -477,6 +592,19 @@ export function SongChart({
   useEffect(() => {
     setSongs(initialSongs);
   }, [initialSongs]);
+
+  useEffect(() => {
+    return () => {
+      const audio = audioRef.current;
+
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -491,6 +619,77 @@ export function SongChart({
 
   const chartSongs = songs.slice(0, TOP_100_SIZE);
   const outsideSongs = songs.slice(TOP_100_SIZE);
+  const playingSong =
+    songs.find((song) => song.id === playingSongId) ??
+    null;
+
+  function stopPreview() {
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.pause();
+      audio.onended = null;
+      audio.onerror = null;
+      audio.removeAttribute("src");
+      audio.load();
+      audioRef.current = null;
+    }
+
+    setPlayingSongId(null);
+  }
+
+  async function handleTogglePreview(song: ChartSong) {
+    if (!song.previewUrl) {
+      setPreviewError(
+        `No audio preview is available for ${song.title}.`,
+      );
+      return;
+    }
+
+    if (playingSongId === song.id) {
+      stopPreview();
+      return;
+    }
+
+    stopPreview();
+    setPreviewError("");
+
+    const audio = new Audio(song.previewUrl);
+audio.volume = PREVIEW_VOLUME;
+audio.preload = "none";
+audioRef.current = audio;
+
+    audio.onended = () => {
+      if (audioRef.current === audio) {
+        audioRef.current = null;
+        setPlayingSongId(null);
+      }
+    };
+
+    audio.onerror = () => {
+      if (audioRef.current === audio) {
+        audioRef.current = null;
+        setPlayingSongId(null);
+        setPreviewError(
+          `The preview for ${song.title} could not be played.`,
+        );
+      }
+    };
+
+    try {
+      setPlayingSongId(song.id);
+      await audio.play();
+    } catch {
+      if (audioRef.current === audio) {
+        audioRef.current = null;
+        setPlayingSongId(null);
+      }
+
+      setPreviewError(
+        `The preview for ${song.title} could not be started.`,
+      );
+    }
+  }
 
   async function saveSongOrder(
     reorderedSongs: ChartSong[],
@@ -658,6 +857,10 @@ export function SongChart({
     setError("");
     setIsSaving(true);
 
+    if (playingSongId === deletingSong.id) {
+      stopPreview();
+    }
+
     try {
       const response = await fetch(
         `/top100/api/songs/${deletingSong.id}`,
@@ -736,6 +939,12 @@ export function SongChart({
               {error}
             </p>
           )}
+
+          {!error && previewError && (
+            <p className="text-sm text-red-400">
+              {previewError}
+            </p>
+          )}
         </div>
 
         <DndContext
@@ -755,6 +964,8 @@ export function SongChart({
           key={song.id}
           song={song}
           isSaving={isSaving}
+          isPlaying={playingSongId === song.id}
+          onTogglePreview={handleTogglePreview}
           onEdit={setEditingSong}
           onDelete={setDeletingSong}
         />
@@ -790,6 +1001,8 @@ export function SongChart({
               key={song.id}
               song={song}
               isSaving={isSaving}
+              isPlaying={playingSongId === song.id}
+              onTogglePreview={handleTogglePreview}
               onEdit={setEditingSong}
               onDelete={setDeletingSong}
             />
@@ -827,6 +1040,13 @@ export function SongChart({
           isDeleting={isSaving}
           onCancel={() => setDeletingSong(null)}
           onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {playingSong && (
+        <SongPreviewPlayer
+          song={playingSong}
+          onStop={stopPreview}
         />
       )}
     </>
