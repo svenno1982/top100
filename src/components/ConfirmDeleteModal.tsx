@@ -1,6 +1,9 @@
 "use client";
 
+type DeleteItemType = "album" | "film" | "song";
+
 type ConfirmDeleteModalProps = {
+  itemType?: DeleteItemType;
   title: string;
   artist: string;
   isDeleting: boolean;
@@ -9,12 +12,16 @@ type ConfirmDeleteModalProps = {
 };
 
 export function ConfirmDeleteModal({
+  itemType = "album",
   title,
   artist,
   isDeleting,
   onCancel,
   onConfirm,
 }: ConfirmDeleteModalProps) {
+  const pluralItemType =
+    itemType === "film" ? "films" : `${itemType}s`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
       <div
@@ -31,7 +38,7 @@ export function ConfirmDeleteModal({
           id="delete-dialog-title"
           className="text-2xl font-semibold"
         >
-          Delete album?
+          Delete {itemType}?
         </h2>
 
         <p className="mt-3 text-neutral-400">
@@ -43,7 +50,8 @@ export function ConfirmDeleteModal({
         </p>
 
         <p className="mt-2 text-sm text-neutral-500">
-          The albums beneath it will move up automatically.
+          The {pluralItemType} beneath it will move up
+          automatically.
         </p>
 
         <div className="mt-6 flex justify-end gap-3">
@@ -62,7 +70,9 @@ export function ConfirmDeleteModal({
             onClick={onConfirm}
             className="rounded-lg bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isDeleting ? "Deleting…" : "Delete album"}
+            {isDeleting
+              ? "Deleting…"
+              : `Delete ${itemType}`}
           </button>
         </div>
       </div>

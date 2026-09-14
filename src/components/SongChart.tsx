@@ -1035,12 +1035,13 @@ audioRef.current = audio;
 
       {deletingSong && (
         <ConfirmDeleteModal
+          itemType="song"
           title={deletingSong.title}
           artist={deletingSong.artist}
           isDeleting={isSaving}
           onCancel={() => setDeletingSong(null)}
           onConfirm={handleConfirmDelete}
-        />
+/>
       )}
 
       {playingSong && (
