@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
+/*
+ * The existing application uses Tailwind's neutral and sky
+ * colour classes extensively. These variables remap those
+ * classes so every existing page responds to the selected theme.
+ */
+
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --theme-neutral-50: #f8fafc;
+  --theme-neutral-100: #f1f5f9;
+  --theme-neutral-200: #dbe2ea;
+  --theme-neutral-300: #b9c2cc;
+  --theme-neutral-400: #9ca3af;
+  --theme-neutral-500: #737b87;
+  --theme-neutral-600: #525a66;
+  --theme-neutral-700: #3f4650;
+  --theme-neutral-800: #272c33;
+  --theme-neutral-900: #171a1f;
+  --theme-neutral-950: #090b0e;
+
+  --theme-accent-300: #7dd3fc;
+  --theme-accent-400: #38bdf8;
+  --theme-accent-950: #082f49;
+
+  --theme-text: #ffffff;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --theme-neutral-50: #0b1220;
+  --theme-neutral-100: #111827;
+  --theme-neutral-200: #1f2937;
+  --theme-neutral-300: #334155;
+  --theme-neutral-400: #4b5868;
+  --theme-neutral-500: #667384;
+  --theme-neutral-600: #8794a3;
+  --theme-neutral-700: #c3cfdb;
+  --theme-neutral-800: #dbe3ec;
+  --theme-neutral-900: #ffffff;
+  --theme-neutral-950: #f3f6fa;
+
+  --theme-accent-300: #0369a1;
+  --theme-accent-400: #0284c7;
+  --theme-accent-950: #e0f2fe;
+
+  --theme-text: #0f172a;
+}
+
+html[data-theme="rebel-blue"] {
+  color-scheme: dark;
+
+  --theme-neutral-50: #f0f9ff;
+  --theme-neutral-100: #dff3ff;
+  --theme-neutral-200: #c2e7fa;
+  --theme-neutral-300: #91cae8;
+  --theme-neutral-400: #6fa6c4;
+  --theme-neutral-500: #4e7e9a;
+  --theme-neutral-600: #315b75;
+  --theme-neutral-700: #23445f;
+  --theme-neutral-800: #15324b;
+  --theme-neutral-900: #0d2439;
+  --theme-neutral-950: #061725;
+
+  --theme-accent-300: #62d6ff;
+  --theme-accent-400: #00aef0;
+  --theme-accent-950: #003f5c;
+
+  --theme-text: #f5fbff;
+}
+
+html[data-theme="purple"] {
+  color-scheme: dark;
+
+  --theme-neutral-50: #faf7ff;
+  --theme-neutral-100: #eee7fa;
+  --theme-neutral-200: #d8cdea;
+  --theme-neutral-300: #bcaed2;
+  --theme-neutral-400: #9d8caf;
+  --theme-neutral-500: #796b89;
+  --theme-neutral-600: #5a4d69;
+  --theme-neutral-700: #443851;
+  --theme-neutral-800: #30273a;
+  --theme-neutral-900: #211a29;
+  --theme-neutral-950: #120e18;
+
+  --theme-accent-300: #c4b5fd;
+  --theme-accent-400: #a78bfa;
+  --theme-accent-950: #3b1f65;
+
+  --theme-text: #fbf9ff;
+}
+
+html[data-theme="ember"] {
+  color-scheme: dark;
+
+  --theme-neutral-50: #fffaf5;
+  --theme-neutral-100: #f8eee5;
+  --theme-neutral-200: #e8d4c3;
+  --theme-neutral-300: #c9aa91;
+  --theme-neutral-400: #aa876d;
+  --theme-neutral-500: #82634f;
+  --theme-neutral-600: #614535;
+  --theme-neutral-700: #493126;
+  --theme-neutral-800: #33221b;
+  --theme-neutral-900: #211713;
+  --theme-neutral-950: #100b09;
+
+  --theme-accent-300: #fdba74;
+  --theme-accent-400: #f97316;
+  --theme-accent-950: #4a1d08;
+
+  --theme-text: #fffaf5;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--theme-neutral-950);
+  --foreground: var(--theme-text);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-neutral-50: var(--theme-neutral-50);
+  --color-neutral-100: var(--theme-neutral-100);
+  --color-neutral-200: var(--theme-neutral-200);
+  --color-neutral-300: var(--theme-neutral-300);
+  --color-neutral-400: var(--theme-neutral-400);
+  --color-neutral-500: var(--theme-neutral-500);
+  --color-neutral-600: var(--theme-neutral-600);
+  --color-neutral-700: var(--theme-neutral-700);
+  --color-neutral-800: var(--theme-neutral-800);
+  --color-neutral-900: var(--theme-neutral-900);
+  --color-neutral-950: var(--theme-neutral-950);
+
+  --color-sky-300: var(--theme-accent-300);
+  --color-sky-400: var(--theme-accent-400);
+  --color-sky-950: var(--theme-accent-950);
+
+  --color-white: var(--theme-text);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  min-height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica,
+    sans-serif;
 }
