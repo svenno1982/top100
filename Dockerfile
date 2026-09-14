@@ -11,7 +11,7 @@ FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-ENV DATABASE_URL="file:/app/build.db"
+ENV DATABASE_URL="postgresql://top100:build-only@localhost:5432/top100?schema=public"
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 COPY --from=dependencies /app/node_modules ./node_modules
