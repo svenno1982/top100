@@ -97,7 +97,7 @@ export function AddFilmForm({
 
       try {
         const response = await fetch(
-          `/top100/api/film-search?q=${encodeURIComponent(
+          `/api/film-search?q=${encodeURIComponent(
             search.trim(),
           )}`,
           {
@@ -156,7 +156,7 @@ export function AddFilmForm({
     setIsSaving(true);
 
     try {
-      const response = await fetch("/top100/api/films", {
+      const response = await fetch("/api/films", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

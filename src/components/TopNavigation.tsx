@@ -39,17 +39,17 @@ const themes: Array<{
 const navigationItems = [
   {
     label: "Albums",
-    href: "/top100/",
+    href: "/",
     section: "albums",
   },
   {
     label: "Films",
-    href: "/top100/films",
+    href: "/films",
     section: "films",
   },
   {
     label: "Songs",
-    href: "/top100/songs",
+    href: "/songs",
     section: "songs",
   },
 ];
@@ -105,7 +105,7 @@ export function TopNavigation() {
     <nav className="border-b border-neutral-800 bg-neutral-950">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <a
-          href="/top100/"
+          href="/"
           className="shrink-0 text-sm font-bold uppercase tracking-[0.25em] text-white"
         >
           My Top 100

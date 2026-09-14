@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         headers: {
           Accept: "application/json",
           "User-Agent":
-            "MyTop100/1.0 (https://rkrp.co.uk/top100)",
+            "MyTop100/1.0 (https://top100.rkrp.co.uk)",
         },
         next: {
           revalidate: 3600,
