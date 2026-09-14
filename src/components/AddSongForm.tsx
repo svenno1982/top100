@@ -63,7 +63,7 @@ export function AddSongForm({
 
       try {
         const response = await fetch(
-          `/top100/api/song-search?q=${encodeURIComponent(
+          `/api/song-search?q=${encodeURIComponent(
             search.trim(),
           )}`,
           {
@@ -124,7 +124,7 @@ export function AddSongForm({
     setIsSaving(true);
 
     try {
-      const response = await fetch("/top100/api/songs", {
+      const response = await fetch("/api/songs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -504,7 +504,7 @@ export function FilmChart({
 
     try {
       const response = await fetch(
-        "/top100/api/films",
+        "/api/films",
         {
           method: "PUT",
           headers: {
@@ -610,7 +610,7 @@ export function FilmChart({
 
     try {
       const response = await fetch(
-        `/top100/api/films/${film.id}`,
+        `/api/films/${film.id}`,
         {
           method: "PATCH",
           headers: {
@@ -662,7 +662,7 @@ export function FilmChart({
 
     try {
       const response = await fetch(
-        `/top100/api/films/${deletingFilm.id}`,
+        `/api/films/${deletingFilm.id}`,
         {
           method: "DELETE",
         },

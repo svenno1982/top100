@@ -701,7 +701,7 @@ audioRef.current = audio;
 
     try {
       const response = await fetch(
-        "/top100/api/songs",
+        "/api/songs",
         {
           method: "PUT",
           headers: {
@@ -807,7 +807,7 @@ audioRef.current = audio;
 
     try {
       const response = await fetch(
-        `/top100/api/songs/${song.id}`,
+        `/api/songs/${song.id}`,
         {
           method: "PATCH",
           headers: {
@@ -863,7 +863,7 @@ audioRef.current = audio;
 
     try {
       const response = await fetch(
-        `/top100/api/songs/${deletingSong.id}`,
+        `/api/songs/${deletingSong.id}`,
         {
           method: "DELETE",
         },

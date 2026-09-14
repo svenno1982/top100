@@ -513,7 +513,7 @@ export function AlbumChart({
 
     try {
       const response = await fetch(
-        "/top100/api/albums",
+        "/api/albums",
         {
           method: "PUT",
           headers: {
@@ -619,7 +619,7 @@ export function AlbumChart({
 
     try {
       const response = await fetch(
-        `/top100/api/albums/${album.id}`,
+        `/api/albums/${album.id}`,
         {
           method: "PATCH",
           headers: {
@@ -671,7 +671,7 @@ export function AlbumChart({
 
     try {
       const response = await fetch(
-        `/top100/api/albums/${deletingAlbum.id}`,
+        `/api/albums/${deletingAlbum.id}`,
         {
           method: "DELETE",
         },

@@ -62,7 +62,7 @@ export function AddAlbumForm({
 
       try {
         const response = await fetch(
-          `/top100/api/search?q=${encodeURIComponent(search.trim())}`,
+          `/api/search?q=${encodeURIComponent(search.trim())}`,
           {
             signal: controller.signal,
           },
@@ -117,7 +117,7 @@ export function AddAlbumForm({
     setIsSaving(true);
 
     try {
-      const response = await fetch("/top100/api/albums", {
+      const response = await fetch("/api/albums", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -88,7 +88,7 @@ export async function POST() {
           headers: {
             Accept: "application/json",
             "User-Agent":
-              "MyTop100/1.0 (https://rkrp.co.uk/top100)",
+              "MyTop100/1.0 (https://top100.rkrp.co.uk)",
           },
           cache: "no-store",
         },
