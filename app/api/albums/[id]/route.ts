@@ -54,21 +54,48 @@ export async function PATCH(
       );
     }
 
-    const album = await prisma.album.update({
-      where: { id },
-      data: {
-        title,
-        artist,
-        releaseYear: body.releaseYear
-          ? Number(body.releaseYear)
-          : null,
-        artworkUrl: body.artworkUrl?.trim() || null,
-        artworkSource:
-          body.artworkSource?.trim() || null,
-        musicBrainzId:
-          body.musicBrainzId?.trim() || null,
+        const musicBrainzId =
+      body.musicBrainzId?.trim() || null;
+
+    const musicBrainzIdChanged =
+      musicBrainzId !==
+      existingAlbum.musicBrainzId;
+
+    const album = await prisma.$transaction(
+      async (transaction) => {
+        if (musicBrainzIdChanged) {
+          await transaction.albumTrack.deleteMany({
+            where: {
+              albumId: id,
+            },
+          });
+        }
+
+        return transaction.album.update({
+          where: {
+            id,
+          },
+          data: {
+            title,
+            artist,
+            releaseYear: body.releaseYear
+              ? Number(body.releaseYear)
+              : null,
+            artworkUrl:
+              body.artworkUrl?.trim() || null,
+            artworkSource:
+              body.artworkSource?.trim() || null,
+            musicBrainzId,
+            ...(musicBrainzIdChanged
+              ? {
+                  tracklistReleaseId: null,
+                  tracklistFetchedAt: null,
+                }
+              : {}),
+          },
+        });
       },
-    });
+    );
 
     return NextResponse.json(album);
   } catch (error) {

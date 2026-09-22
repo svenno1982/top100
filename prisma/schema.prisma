@@ -8,16 +8,33 @@ datasource db {
 }
 
 model Album {
-  id             Int      @id @default(autoincrement())
-  position       Int      @unique
-  title          String
-  artist         String
-  releaseYear    Int?
-  artworkUrl     String?
-  artworkSource  String?
-  musicBrainzId  String?  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 Int          @id @default(autoincrement())
+  position           Int          @unique
+  title              String
+  artist             String
+  releaseYear        Int?
+  artworkUrl         String?
+  artworkSource      String?
+  musicBrainzId      String?      @unique
+  tracklistReleaseId String?
+  tracklistFetchedAt DateTime?
+  tracks             AlbumTrack[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model AlbumTrack {
+  id          Int    @id @default(autoincrement())
+  albumId     Int
+  discNumber  Int    @default(1)
+  position    Int
+  trackNumber String
+  title       String
+  lengthMs    Int?
+  album       Album  @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@unique([albumId, discNumber, position])
+  @@index([albumId])
 }
 
 model Film {
