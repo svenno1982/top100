@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AlbumArtwork } from "@/components/AlbumArtwork";
+import { AlbumTrackTooltip } from "@/components/AlbumTrackTooltip";
 import { ConfirmDeleteModal } from "@/components/ConfirmDeleteModal";
 
 const TOP_100_SIZE = 100;
@@ -124,72 +125,81 @@ function AlbumCard({
           : "border-neutral-800"
       }`}
     >
-      <div className="relative aspect-square overflow-hidden bg-neutral-800">
-        <AlbumArtwork
-          src={album.artworkUrl}
-          title={album.title}
-          artist={album.artist}
-          className="h-full w-full object-cover"
-        />
+      <AlbumTrackTooltip
+        albumId={album.id}
+        albumTitle={album.title}
+        hasMusicBrainzId={Boolean(
+          album.musicBrainzId,
+        )}
+        disabled={isSaving || isDragging}
+      >
+        <div className="relative aspect-square overflow-hidden bg-neutral-800">
+          <AlbumArtwork
+            src={album.artworkUrl}
+            title={album.title}
+            artist={album.artist}
+            className="h-full w-full object-cover"
+          />
 
-        <div className="absolute left-2 top-2 flex h-8 min-w-8 items-center justify-center rounded-full bg-neutral-950/90 px-2 text-sm font-bold text-sky-400 shadow-lg">
-          {album.position}
+          <div className="absolute left-2 top-2 flex h-8 min-w-8 items-center justify-center rounded-full bg-neutral-950/90 px-2 text-sm font-bold text-sky-400 shadow-lg">
+            {album.position}
+          </div>
+
+          <button
+            type="button"
+            disabled={isSaving}
+            aria-label={`Move ${album.title}`}
+            title="Drag to reorder"
+            className="absolute right-2 top-2 cursor-grab touch-none select-none rounded-lg bg-neutral-950/90 px-2 py-1 text-lg text-neutral-300 shadow-lg transition hover:text-white active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+            {...attributes}
+            {...listeners}
+          >
+            ☰
+          </button>
         </div>
 
-        <button
-          type="button"
-          disabled={isSaving}
-          aria-label={`Move ${album.title}`}
-          title="Drag to reorder"
-          className="absolute right-2 top-2 cursor-grab touch-none select-none rounded-lg bg-neutral-950/90 px-2 py-1 text-lg text-neutral-300 shadow-lg transition hover:text-white active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
-          {...attributes}
-          {...listeners}
-        >
-          ☰
-        </button>
-      </div>
+        <div className="p-3">
+          <h2
+            title={album.title}
+            className="truncate text-sm font-semibold"
+          >
+            {album.title}
+          </h2>
 
-      <div className="p-3">
-        <h2
-          title={album.title}
-          className="truncate text-sm font-semibold"
-        >
-          {album.title}
-        </h2>
+          <p
+            title={album.artist}
+            className="mt-1 truncate text-xs text-neutral-400"
+          >
+            {album.artist}
+          </p>
 
-        <p
-          title={album.artist}
-          className="mt-1 truncate text-xs text-neutral-400"
-        >
-          {album.artist}
-        </p>
+          <div className="mt-2 flex min-h-7 items-center justify-between gap-1">
+            <span className="text-xs text-neutral-500">
+              {album.releaseYear ?? "—"}
+            </span>
 
-        <div className="mt-2 flex min-h-7 items-center justify-between gap-1">
-          <span className="text-xs text-neutral-500">
-            {album.releaseYear ?? "—"}
-          </span>
+            <div className="flex">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => onEdit(album)}
+                className="rounded px-2 py-1 text-xs text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-50"
+              >
+                Edit
+              </button>
 
-          <div className="flex">
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={() => onEdit(album)}
-              className="rounded px-2 py-1 text-xs text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-50"
-            >
-              Edit
-            </button>
-
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={() => onDelete(album)}
-              className="rounded px-2 py-1 text-xs text-neutral-400 transition hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
-            >
-              Delete
-            </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => onDelete(album)}
+                className="rounded px-2 py-1 text-xs text-neutral-400 transition hover:bg-red-950 hover:text-red-300 disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </AlbumTrackTooltip>
     </article>
   );
 }
