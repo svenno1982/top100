@@ -3,6 +3,7 @@ import {
   approveUser,
   suspendUser,
 } from "./actions";
+import { InvitationManager } from "./InvitationManager";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPageUser } from "@/lib/page-access";
 
@@ -179,30 +180,85 @@ function UserCard({
 export default async function UsersAdminPage() {
   await requireAdminPageUser();
 
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      email: true,
-      applicationMessage: true,
-      isProfilePublic: true,
-      isSiteOwner: true,
-      role: true,
-      status: true,
-      createdAt: true,
-      _count: {
-        select: {
-          albums: true,
-          films: true,
-          songs: true,
+  const [users, invitations] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        applicationMessage: true,
+        isProfilePublic: true,
+        isSiteOwner: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        _count: {
+          select: {
+            albums: true,
+            films: true,
+            songs: true,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.invitation.findMany({
+      select: {
+        id: true,
+        email: true,
+        expiresAt: true,
+        acceptedAt: true,
+        revokedAt: true,
+        createdAt: true,
+        createdBy: {
+          select: {
+            username: true,
+            email: true,
+          },
+        },
+        acceptedBy: {
+          select: {
+            username: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
+    }),
+  ]);
+
+  const now = new Date();
+  const invitationSummaries = invitations.map(
+    (invitation) => ({
+      id: invitation.id,
+      email: invitation.email,
+      status: invitation.acceptedAt
+        ? ("ACCEPTED" as const)
+        : invitation.revokedAt
+          ? ("REVOKED" as const)
+          : invitation.expiresAt <= now
+            ? ("EXPIRED" as const)
+            : ("PENDING" as const),
+      createdAt: invitation.createdAt.toISOString(),
+      expiresAt: invitation.expiresAt.toISOString(),
+      acceptedAt:
+        invitation.acceptedAt?.toISOString() ?? null,
+      createdBy:
+        invitation.createdBy.username ??
+        invitation.createdBy.email ??
+        "Administrator",
+      acceptedBy:
+        invitation.acceptedBy?.username ??
+        invitation.acceptedBy?.email ??
+        null,
+    }),
+  );
 
   const pendingUsers = users.filter(
     (user) => user.status === "PENDING",
@@ -233,6 +289,10 @@ export default async function UsersAdminPage() {
             accounts.
           </p>
         </header>
+
+        <InvitationManager
+          invitations={invitationSummaries}
+        />
 
         <section>
           <div className="mb-4 flex items-center justify-between">

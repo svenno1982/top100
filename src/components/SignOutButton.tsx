@@ -3,11 +3,13 @@ import { signOut } from "@/auth";
 type SignOutButtonProps = {
   className?: string;
   label?: string;
+  redirectTo?: string;
 };
 
 export function SignOutButton({
   className = "",
   label = "Sign out",
+  redirectTo = "/signin",
 }: SignOutButtonProps) {
   return (
     <form
@@ -15,7 +17,7 @@ export function SignOutButton({
         "use server";
 
         await signOut({
-          redirectTo: "/signin",
+          redirectTo,
         });
       }}
     >

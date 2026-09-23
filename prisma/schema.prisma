@@ -45,10 +45,33 @@ model User {
   albums        Album[]
   films         Film[]
   songs         Song[]
+  invitationsCreated  Invitation[] @relation("InvitationCreator")
+  invitationsAccepted Invitation[] @relation("InvitationAcceptor")
 
   @@index([approvedById])
   @@index([status])
   @@map("users")
+}
+
+model Invitation {
+  id           String    @id @default(cuid())
+  email        String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdById  String
+  acceptedById String?
+
+  createdBy  User  @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  acceptedBy User? @relation("InvitationAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([email, acceptedAt, revokedAt])
+  @@index([expiresAt])
+  @@index([createdById])
+  @@index([acceptedById])
 }
 
 model Account {

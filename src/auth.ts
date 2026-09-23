@@ -106,24 +106,89 @@ export const {
         Boolean(administratorEmail) &&
         userEmail === administratorEmail;
 
-      await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          emailVerified: new Date(),
-          ...(isBootstrapAdministrator
-            ? {
-                username: "Svenno",
-                usernameKey: "svenno",
-                displayName: "Svenno",
-                role: "ADMIN",
-                status: "APPROVED",
-                isSiteOwner: true,
-                approvedAt: new Date(),
-              }
-            : {}),
-        },
+      const now = new Date();
+
+      await prisma.$transaction(async (transaction) => {
+        const databaseUser =
+          await transaction.user.findUnique({
+            where: {
+              id: user.id,
+            },
+            select: {
+              status: true,
+            },
+          });
+
+        const invitation =
+          userEmail &&
+          !isBootstrapAdministrator &&
+          databaseUser?.status !== "SUSPENDED"
+            ? await transaction.invitation.findFirst({
+                where: {
+                  email: userEmail,
+                  acceptedAt: null,
+                  revokedAt: null,
+                  expiresAt: {
+                    gt: now,
+                  },
+                },
+                orderBy: {
+                  createdAt: "desc",
+                },
+                select: {
+                  id: true,
+                  createdById: true,
+                },
+              })
+            : null;
+
+        const acceptedInvitation = invitation
+          ? await transaction.invitation.updateMany({
+              where: {
+                id: invitation.id,
+                acceptedAt: null,
+                revokedAt: null,
+                expiresAt: {
+                  gt: now,
+                },
+              },
+              data: {
+                acceptedAt: now,
+                acceptedById: user.id,
+              },
+            })
+          : null;
+
+        const invitationWasAccepted =
+          acceptedInvitation?.count === 1;
+
+        await transaction.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            emailVerified: now,
+            ...(invitationWasAccepted
+              ? {
+                  status: "APPROVED" as const,
+                  approvedAt: now,
+                  approvedById:
+                    invitation?.createdById,
+                }
+              : {}),
+            ...(isBootstrapAdministrator
+              ? {
+                  username: "Svenno",
+                  usernameKey: "svenno",
+                  displayName: "Svenno",
+                  role: "ADMIN" as const,
+                  status: "APPROVED" as const,
+                  isSiteOwner: true,
+                  approvedAt: now,
+                }
+              : {}),
+          },
+        });
       });
     },
   },

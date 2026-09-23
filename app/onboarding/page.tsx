@@ -55,8 +55,9 @@ export default async function OnboardingPage({
 
         <p className="mt-4 leading-7 text-neutral-400">
           Choose how you will appear on My Top 100.
-          Your three charts will start empty once your
-          account has been approved.
+          {session.user.status === "APPROVED"
+            ? " Your three charts will be ready as soon as your profile is saved."
+            : " Your three charts will start empty once your account has been approved."}
         </p>
 
         {error && (
@@ -138,7 +139,9 @@ export default async function OnboardingPage({
             type="submit"
             className="h-12 w-full rounded-xl bg-sky-400 px-5 font-semibold text-neutral-950 transition hover:bg-sky-300"
           >
-            Submit for approval
+            {session.user.status === "APPROVED"
+              ? "Create my profile"
+              : "Submit for approval"}
           </button>
         </form>
       </section>
