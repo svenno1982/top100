@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   approveUser,
   suspendUser,
@@ -107,6 +108,17 @@ function UserCard({
         </div>
 
         <div className="flex shrink-0 gap-2">
+          {user.username && (
+            <Link
+              href={`/users/${encodeURIComponent(
+                user.username,
+              )}`}
+              className="flex h-10 items-center rounded-xl border border-neutral-700 px-4 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+            >
+              View charts
+            </Link>
+          )}
+
           {user.status !== "APPROVED" &&
             user.username && (
               <form action={approveUser}>
