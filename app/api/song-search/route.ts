@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 
 type AppleSong = {
   wrapperType?: string;
@@ -60,6 +61,11 @@ function createResultKey(song: AppleSong) {
 }
 
 export async function GET(request: NextRequest) {
+    const access = await requireApprovedApiUser();
+
+  if (access.response) {
+    return access.response;
+  }
   try {
     const query =
       request.nextUrl.searchParams.get("q")?.trim();

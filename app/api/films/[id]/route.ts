@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 import { prisma } from "@/lib/prisma";
 
 type FilmRouteContext = {
@@ -56,6 +57,13 @@ export async function PATCH(
   context: FilmRouteContext,
 ) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const { id: idValue } = await context.params;
     const id = parseFilmId(idValue);
 
@@ -66,9 +74,10 @@ export async function PATCH(
       );
     }
 
-    const existingFilm = await prisma.film.findUnique({
+    const existingFilm = await prisma.film.findFirst({
       where: {
         id,
+        ownerId,
       },
     });
 
@@ -98,7 +107,13 @@ export async function PATCH(
       const duplicateFilm =
         await prisma.film.findUnique({
           where: {
-            tmdbId,
+            ownerId_tmdbId: {
+              ownerId,
+              tmdbId,
+            },
+          },
+          select: {
+            id: true,
           },
         });
 
@@ -106,7 +121,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Another film in the chart already uses this TMDB entry",
+              "Another film in your chart already uses this TMDB entry",
           },
           { status: 409 },
         );
@@ -144,6 +159,13 @@ export async function DELETE(
   context: FilmRouteContext,
 ) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const { id: idValue } = await context.params;
     const id = parseFilmId(idValue);
 
@@ -154,9 +176,10 @@ export async function DELETE(
       );
     }
 
-    const existingFilm = await prisma.film.findUnique({
+    const existingFilm = await prisma.film.findFirst({
       where: {
         id,
+        ownerId,
       },
     });
 
@@ -177,6 +200,7 @@ export async function DELETE(
       const filmsToShift =
         await transaction.film.findMany({
           where: {
+            ownerId,
             position: {
               gt: existingFilm.position,
             },

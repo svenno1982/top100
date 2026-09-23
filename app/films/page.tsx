@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AddFilmForm } from "@/components/AddFilmForm";
 import { FilmChart } from "@/components/FilmChart";
 import { prisma } from "@/lib/prisma";
+import { requireApprovedPageUser } from "@/lib/page-access";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,12 @@ export const metadata: Metadata = {
 };
 
 export default async function FilmsPage() {
+  const user = await requireApprovedPageUser();
+
   const films = await prisma.film.findMany({
+    where: {
+      ownerId: user.id,
+    },
     orderBy: {
       position: "asc",
     },

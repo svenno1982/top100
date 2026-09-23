@@ -2,8 +2,9 @@ import {
   NextRequest,
   NextResponse,
 } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { fetchAlbumTracklist } from "@/lib/musicbrainz-tracklist";
+import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
   params: Promise<{
@@ -27,6 +28,12 @@ async function findAlbumWithTracks(id: number) {
       id,
     },
     include: {
+      owner: {
+        select: {
+          status: true,
+          isProfilePublic: true,
+        },
+      },
       tracks: {
         orderBy: [
           {
@@ -49,7 +56,7 @@ export async function GET(
     const params = await context.params;
     const id = parseAlbumId(params.id);
 
-    if (!id) {
+    if (id === null) {
       return NextResponse.json(
         {
           error: "Invalid album ID",
@@ -73,9 +80,51 @@ export async function GET(
       );
     }
 
+    const session = await auth();
+
+    const isApprovedOwner =
+      session?.user?.id === album.ownerId &&
+      session.user.status === "APPROVED";
+
+    const isPublicAlbum =
+      album.owner.status === "APPROVED" &&
+      album.owner.isProfilePublic;
+
+    /*
+     * Return 404 rather than revealing that a private
+     * album ID exists.
+     */
+    if (!isApprovedOwner && !isPublicAlbum) {
+      return NextResponse.json(
+        {
+          error: "Album not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
     const forceRefresh =
       request.nextUrl.searchParams.get("refresh") ===
       "1";
+
+    /*
+     * Public visitors may read a cached tracklist or cause
+     * an uncached public tracklist to be fetched. Only the
+     * chart owner may explicitly replace cached data.
+     */
+    if (forceRefresh && !isApprovedOwner) {
+      return NextResponse.json(
+        {
+          error:
+            "Only the chart owner can refresh this track listing",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
 
     if (album.tracks.length > 0 && !forceRefresh) {
       return NextResponse.json({

@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
     const albums = await prisma.album.findMany({
+      where: {
+        ownerId: access.userId,
+      },
       orderBy: {
         position: "asc",
       },
@@ -22,10 +32,19 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const body = await request.json();
 
     const title = body.title?.trim();
     const artist = body.artist?.trim();
+    const musicBrainzId =
+      body.musicBrainzId?.trim() || null;
 
     if (!title || !artist) {
       return NextResponse.json(
@@ -34,7 +53,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (musicBrainzId) {
+      const duplicateAlbum =
+        await prisma.album.findUnique({
+          where: {
+            ownerId_musicBrainzId: {
+              ownerId,
+              musicBrainzId,
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (duplicateAlbum) {
+        return NextResponse.json(
+          {
+            error:
+              "This album is already in your chart",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const existingAlbums = await prisma.album.findMany({
+      where: {
+        ownerId,
+      },
       orderBy: {
         position: "asc",
       },
@@ -42,7 +89,6 @@ export async function POST(request: NextRequest) {
         id: true,
       },
     });
-
 
     const requestedPosition = Number(body.position);
 
@@ -56,9 +102,8 @@ export async function POST(request: NextRequest) {
     const album = await prisma.$transaction(
       async (transaction) => {
         /*
-         * Move every existing album temporarily into a
-         * negative position. This prevents collisions with
-         * the unique position constraint while inserting.
+         * Temporarily move only this user's existing albums
+         * into negative positions to avoid collisions.
          */
         for (
           let index = 0;
@@ -75,13 +120,10 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        /*
-         * Create the new album directly in its requested
-         * chart position.
-         */
         const createdAlbum =
           await transaction.album.create({
             data: {
+              ownerId,
               position,
               title,
               artist,
@@ -92,15 +134,13 @@ export async function POST(request: NextRequest) {
                 body.artworkUrl?.trim() || null,
               artworkSource:
                 body.artworkSource?.trim() || null,
-              musicBrainzId:
-                body.musicBrainzId?.trim() || null,
+              musicBrainzId,
             },
           });
 
         /*
-         * Restore the existing albums to positive positions,
-         * moving albums at or below the insertion point down
-         * by one place.
+         * Restore only this user's albums, shifting entries
+         * at or below the insertion point down one place.
          */
         for (
           let index = 0;
@@ -143,6 +183,13 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const body = await request.json();
     const orderedIds = body.orderedIds;
 
@@ -159,6 +206,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const existingAlbums = await prisma.album.findMany({
+      where: {
+        ownerId,
+      },
       select: {
         id: true,
       },
@@ -181,7 +231,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The submitted order does not match the chart",
+            "The submitted order does not match your album chart",
         },
         { status: 400 },
       );
@@ -189,9 +239,8 @@ export async function PUT(request: NextRequest) {
 
     await prisma.$transaction(async (transaction) => {
       /*
-       * Move positions temporarily into negative numbers.
-       * This prevents collisions with the unique position
-       * field.
+       * The submitted IDs have been verified as belonging
+       * exclusively to this user.
        */
       for (
         let index = 0;
@@ -208,7 +257,6 @@ export async function PUT(request: NextRequest) {
         });
       }
 
-      // Apply the final positive positions.
       for (
         let index = 0;
         index < orderedIds.length;
@@ -226,6 +274,9 @@ export async function PUT(request: NextRequest) {
     });
 
     const albums = await prisma.album.findMany({
+      where: {
+        ownerId,
+      },
       orderBy: {
         position: "asc",
       },

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 
 type MusicBrainzArtist = {
   name: string;
@@ -18,6 +19,11 @@ type MusicBrainzResponse = {
 };
 
 export async function GET(request: NextRequest) {
+    const access = await requireApprovedApiUser();
+
+  if (access.response) {
+    return access.response;
+  }
   const query = request.nextUrl.searchParams.get("q")?.trim();
 
   if (!query || query.length < 2) {

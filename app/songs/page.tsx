@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AddSongForm } from "@/components/AddSongForm";
 import { SongChart } from "@/components/SongChart";
 import { prisma } from "@/lib/prisma";
+import { requireApprovedPageUser } from "@/lib/page-access";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,12 @@ export const metadata: Metadata = {
 };
 
 export default async function SongsPage() {
+  const user = await requireApprovedPageUser();
+
   const songs = await prisma.song.findMany({
+    where: {
+      ownerId: user.id,
+    },
     orderBy: {
       position: "asc",
     },

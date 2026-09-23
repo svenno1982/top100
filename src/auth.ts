@@ -37,6 +37,10 @@ export const {
     strategy: "database",
   },
 
+    pages: {
+    signIn: "/signin",
+  },
+
   callbacks: {
     signIn({ account, profile }) {
       if (account?.provider !== "google") {
@@ -84,7 +88,9 @@ export const {
     },
   },
 
-      events: {
+
+
+    events: {
     async signIn({ user, account }) {
       if (account?.provider !== "google") {
         return;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 import { prisma } from "@/lib/prisma";
 
 type SongRouteContext = {
@@ -64,6 +65,13 @@ export async function PATCH(
   context: SongRouteContext,
 ) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const { id: idValue } = await context.params;
     const id = parseSongId(idValue);
 
@@ -74,9 +82,10 @@ export async function PATCH(
       );
     }
 
-    const existingSong = await prisma.song.findUnique({
+    const existingSong = await prisma.song.findFirst({
       where: {
         id,
+        ownerId,
       },
     });
 
@@ -112,7 +121,13 @@ export async function PATCH(
       const duplicateSong =
         await prisma.song.findUnique({
           where: {
-            appleTrackId,
+            ownerId_appleTrackId: {
+              ownerId,
+              appleTrackId,
+            },
+          },
+          select: {
+            id: true,
           },
         });
 
@@ -120,7 +135,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Another song in the chart already uses this Apple track",
+              "Another song in your chart already uses this Apple track",
           },
           { status: 409 },
         );
@@ -165,6 +180,13 @@ export async function DELETE(
   context: SongRouteContext,
 ) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const { id: idValue } = await context.params;
     const id = parseSongId(idValue);
 
@@ -175,9 +197,10 @@ export async function DELETE(
       );
     }
 
-    const existingSong = await prisma.song.findUnique({
+    const existingSong = await prisma.song.findFirst({
       where: {
         id,
+        ownerId,
       },
     });
 
@@ -198,6 +221,7 @@ export async function DELETE(
       const songsToShift =
         await transaction.song.findMany({
           where: {
+            ownerId,
             position: {
               gt: existingSong.position,
             },
@@ -207,8 +231,6 @@ export async function DELETE(
           },
         });
 
-      // Temporarily move the affected songs below zero
-      // to avoid unique-position collisions.
       for (const song of songsToShift) {
         await transaction.song.update({
           where: {

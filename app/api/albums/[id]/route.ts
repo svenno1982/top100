@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -22,19 +23,30 @@ export async function PATCH(
   context: RouteContext,
 ) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const params = await context.params;
     const id = parseAlbumId(params.id);
 
-    if (!id) {
+    if (id === null) {
       return NextResponse.json(
         { error: "Invalid album ID" },
         { status: 400 },
       );
     }
 
-    const existingAlbum = await prisma.album.findUnique({
-      where: { id },
-    });
+    const existingAlbum =
+      await prisma.album.findFirst({
+        where: {
+          id,
+          ownerId,
+        },
+      });
 
     if (!existingAlbum) {
       return NextResponse.json(
@@ -54,12 +66,36 @@ export async function PATCH(
       );
     }
 
-        const musicBrainzId =
+    const musicBrainzId =
       body.musicBrainzId?.trim() || null;
 
     const musicBrainzIdChanged =
-      musicBrainzId !==
-      existingAlbum.musicBrainzId;
+      musicBrainzId !== existingAlbum.musicBrainzId;
+
+    if (musicBrainzId && musicBrainzIdChanged) {
+      const duplicateAlbum =
+        await prisma.album.findUnique({
+          where: {
+            ownerId_musicBrainzId: {
+              ownerId,
+              musicBrainzId,
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (duplicateAlbum) {
+        return NextResponse.json(
+          {
+            error:
+              "Another album in your chart already uses this MusicBrainz entry",
+          },
+          { status: 409 },
+        );
+      }
+    }
 
     const album = await prisma.$transaction(
       async (transaction) => {
@@ -113,19 +149,30 @@ export async function DELETE(
   context: RouteContext,
 ) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const params = await context.params;
     const id = parseAlbumId(params.id);
 
-    if (!id) {
+    if (id === null) {
       return NextResponse.json(
         { error: "Invalid album ID" },
         { status: 400 },
       );
     }
 
-    const existingAlbum = await prisma.album.findUnique({
-      where: { id },
-    });
+    const existingAlbum =
+      await prisma.album.findFirst({
+        where: {
+          id,
+          ownerId,
+        },
+      });
 
     if (!existingAlbum) {
       return NextResponse.json(
@@ -136,11 +183,16 @@ export async function DELETE(
 
     await prisma.$transaction(async (transaction) => {
       await transaction.album.delete({
-        where: { id },
+        where: {
+          id,
+        },
       });
 
       const remainingAlbums =
         await transaction.album.findMany({
+          where: {
+            ownerId,
+          },
           orderBy: {
             position: "asc",
           },
@@ -149,8 +201,9 @@ export async function DELETE(
           },
         });
 
-      // Move everything temporarily to negative positions
-      // to avoid unique-position collisions.
+      /*
+       * Re-sequence only this user's remaining albums.
+       */
       for (
         let index = 0;
         index < remainingAlbums.length;
@@ -166,7 +219,6 @@ export async function DELETE(
         });
       }
 
-      // Restore a clean sequence starting at position 1.
       for (
         let index = 0;
         index < remainingAlbums.length;

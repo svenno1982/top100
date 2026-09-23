@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 
 type TmdbMovie = {
   id: number;
@@ -81,6 +82,11 @@ async function getDirector(
 }
 
 export async function GET(request: NextRequest) {
+    const access = await requireApprovedApiUser();
+
+  if (access.response) {
+    return access.response;
+  }
   const query =
     request.nextUrl.searchParams.get("q")?.trim() ?? "";
 

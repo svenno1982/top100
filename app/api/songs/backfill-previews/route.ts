@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdminApiUser } from "@/lib/auth-access";
 
 type AppleSong = {
   wrapperType?: string;
@@ -26,6 +27,11 @@ function getSecureUrl(url?: string) {
 
 export async function POST() {
   try {
+    const access = await requireAdminApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
     const songs = await prisma.song.findMany({
       where: {
         appleTrackId: {

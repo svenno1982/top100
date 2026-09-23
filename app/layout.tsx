@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TopNavigation } from "@/components/TopNavigation";
 import "./globals.css";
+import { auth } from "@/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,9 +43,18 @@ export const metadata: Metadata = {
     "My definitive rankings of albums, films and songs.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: LayoutProps<"/">) {
+    const session = await auth();
+
+  const navigationUser = session?.user?.id
+    ? {
+        username: session.user.username,
+        status: session.user.status,
+        isSiteOwner: session.user.isSiteOwner,
+      }
+    : null;
   return (
     <html
       lang="en"
@@ -61,7 +71,7 @@ export default function RootLayout({
       </head>
 
       <body className="flex min-h-full flex-col bg-neutral-950 text-white">
-        <TopNavigation />
+        <TopNavigation user={navigationUser} />
 
         {children}
       </body>

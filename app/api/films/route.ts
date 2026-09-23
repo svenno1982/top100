@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 import { prisma } from "@/lib/prisma";
 
 function parseReleaseYear(value: unknown) {
@@ -41,7 +42,16 @@ function parseTmdbId(value: unknown) {
 
 export async function GET() {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
     const films = await prisma.film.findMany({
+      where: {
+        ownerId: access.userId,
+      },
       orderBy: {
         position: "asc",
       },
@@ -60,6 +70,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const body = await request.json();
 
     const title = body.title?.trim();
@@ -78,21 +95,35 @@ export async function POST(request: NextRequest) {
     }
 
     if (tmdbId !== null) {
-      const existingFilm = await prisma.film.findUnique({
-        where: {
-          tmdbId,
-        },
-      });
+      const existingFilm =
+        await prisma.film.findUnique({
+          where: {
+            ownerId_tmdbId: {
+              ownerId,
+              tmdbId,
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
 
       if (existingFilm) {
         return NextResponse.json(
-          { error: "This film is already in the chart" },
+          {
+            error:
+              "This film is already in your chart",
+          },
           { status: 409 },
         );
       }
     }
 
-    const filmCount = await prisma.film.count();
+    const filmCount = await prisma.film.count({
+      where: {
+        ownerId,
+      },
+    });
 
     const requestedPosition = Number(body.position);
 
@@ -107,6 +138,7 @@ export async function POST(request: NextRequest) {
         const filmsToShift =
           await transaction.film.findMany({
             where: {
+              ownerId,
               position: {
                 gte: position,
               },
@@ -116,8 +148,10 @@ export async function POST(request: NextRequest) {
             },
           });
 
-        // Move affected positions temporarily below zero.
-        // This avoids collisions with the unique position field.
+        /*
+         * Temporarily move only this user's affected films
+         * below zero to avoid position collisions.
+         */
         for (const existingFilm of filmsToShift) {
           await transaction.film.update({
             where: {
@@ -132,6 +166,7 @@ export async function POST(request: NextRequest) {
         const createdFilm =
           await transaction.film.create({
             data: {
+              ownerId,
               position,
               title,
               director,
@@ -141,7 +176,6 @@ export async function POST(request: NextRequest) {
             },
           });
 
-        // Restore the displaced films one position lower.
         for (const existingFilm of filmsToShift) {
           await transaction.film.update({
             where: {
@@ -172,6 +206,13 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const body = await request.json();
     const orderedIds = body.orderedIds;
 
@@ -188,6 +229,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const existingFilms = await prisma.film.findMany({
+      where: {
+        ownerId,
+      },
       select: {
         id: true,
       },
@@ -210,7 +254,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The submitted order does not match the film chart",
+            "The submitted order does not match your film chart",
         },
         { status: 400 },
       );
@@ -249,6 +293,9 @@ export async function PUT(request: NextRequest) {
     });
 
     const films = await prisma.film.findMany({
+      where: {
+        ownerId,
+      },
       orderBy: {
         position: "asc",
       },

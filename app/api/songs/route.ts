@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedApiUser } from "@/lib/auth-access";
 import { prisma } from "@/lib/prisma";
 
 function parseReleaseYear(value: unknown) {
@@ -49,7 +50,16 @@ function parseOptionalUrl(value: unknown) {
 
 export async function GET() {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
     const songs = await prisma.song.findMany({
+      where: {
+        ownerId: access.userId,
+      },
       orderBy: {
         position: "asc",
       },
@@ -68,6 +78,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const body = await request.json();
 
     const title = body.title?.trim();
@@ -90,7 +107,13 @@ export async function POST(request: NextRequest) {
       const existingSong =
         await prisma.song.findUnique({
           where: {
-            appleTrackId,
+            ownerId_appleTrackId: {
+              ownerId,
+              appleTrackId,
+            },
+          },
+          select: {
+            id: true,
           },
         });
 
@@ -98,14 +121,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "This song is already in the chart",
+              "This song is already in your chart",
           },
           { status: 409 },
         );
       }
     }
 
-    const songCount = await prisma.song.count();
+    const songCount = await prisma.song.count({
+      where: {
+        ownerId,
+      },
+    });
+
     const requestedPosition = Number(body.position);
 
     const position =
@@ -119,6 +147,7 @@ export async function POST(request: NextRequest) {
         const songsToShift =
           await transaction.song.findMany({
             where: {
+              ownerId,
               position: {
                 gte: position,
               },
@@ -128,8 +157,10 @@ export async function POST(request: NextRequest) {
             },
           });
 
-        // Temporarily move affected positions below zero
-        // to avoid collisions with the unique constraint.
+        /*
+         * Temporarily move only this user's affected songs
+         * below zero to avoid position collisions.
+         */
         for (const existingSong of songsToShift) {
           await transaction.song.update({
             where: {
@@ -144,6 +175,7 @@ export async function POST(request: NextRequest) {
         const createdSong =
           await transaction.song.create({
             data: {
+              ownerId,
               position,
               title,
               artist,
@@ -194,6 +226,13 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const access = await requireApprovedApiUser();
+
+    if (access.response) {
+      return access.response;
+    }
+
+    const ownerId = access.userId;
     const body = await request.json();
     const orderedIds = body.orderedIds;
 
@@ -212,12 +251,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const existingSongs =
-      await prisma.song.findMany({
-        select: {
-          id: true,
-        },
-      });
+    const existingSongs = await prisma.song.findMany({
+      where: {
+        ownerId,
+      },
+      select: {
+        id: true,
+      },
+    });
 
     const existingIds = existingSongs
       .map((song) => song.id)
@@ -236,7 +277,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The submitted order does not match the song chart",
+            "The submitted order does not match your song chart",
         },
         { status: 400 },
       );
@@ -275,6 +316,9 @@ export async function PUT(request: NextRequest) {
     });
 
     const songs = await prisma.song.findMany({
+      where: {
+        ownerId,
+      },
       orderBy: {
         position: "asc",
       },
