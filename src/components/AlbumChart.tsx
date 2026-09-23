@@ -491,12 +491,26 @@ export function AlbumChart({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setHasMounted(true);
+    useEffect(() => {
+    const animationFrame =
+      window.requestAnimationFrame(() => {
+        setHasMounted(true);
+      });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+    };
   }, []);
 
   useEffect(() => {
-    setAlbums(initialAlbums);
+    const animationFrame =
+      window.requestAnimationFrame(() => {
+        setAlbums(initialAlbums);
+      });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+    };
   }, [initialAlbums]);
 
   const sensors = useSensors(
@@ -758,6 +772,9 @@ export function AlbumChart({
             </p>
           )}
         </div>
+                <p className="mb-3 text-center text-xs text-neutral-500 sm:hidden">
+          Tap an album cover to view its track listing.
+        </p>
 
         <DndContext
           sensors={sensors}

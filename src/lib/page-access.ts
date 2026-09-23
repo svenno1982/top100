@@ -22,3 +22,13 @@ export async function requireApprovedPageUser() {
 
   return session.user;
 }
+
+export async function requireAdminPageUser() {
+  const user = await requireApprovedPageUser();
+
+  if (user.role !== "ADMIN") {
+    redirect("/");
+  }
+
+  return user;
+}

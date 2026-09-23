@@ -83,7 +83,7 @@ export function AlbumTrackTooltip({
     }, 120);
   }
 
-  function updatePosition() {
+    function updatePosition() {
     const anchor = anchorRef.current;
 
     if (!anchor) {
@@ -92,36 +92,92 @@ export function AlbumTrackTooltip({
 
     const rect = anchor.getBoundingClientRect();
     const viewportPadding = 12;
+    const gap = 12;
+
     const width = Math.min(
       360,
       window.innerWidth - viewportPadding * 2,
     );
 
-    const preferredLeft =
-      window.scrollX +
-      rect.left +
-      rect.width / 2 -
-      width / 2;
+    const spaceOnRight =
+      window.innerWidth -
+      rect.right -
+      viewportPadding;
 
-    const minimumLeft =
-      window.scrollX + viewportPadding;
+    const spaceOnLeft =
+      rect.left -
+      viewportPadding;
+
+    const forceBelow = window.innerWidth < 768;
+
+    const canFitOnRight =
+      spaceOnRight >= width + gap;
+
+    const canFitOnLeft =
+      spaceOnLeft >= width + gap;
+
+    let viewportLeft: number;
+    let viewportTop: number;
+    let isBelow = forceBelow;
+
+    if (forceBelow) {
+      viewportLeft =
+        rect.left +
+        rect.width / 2 -
+        width / 2;
+
+      viewportTop = rect.bottom + gap;
+    } else if (
+      canFitOnRight ||
+      (!canFitOnLeft && spaceOnRight >= spaceOnLeft)
+    ) {
+      viewportLeft = rect.right + gap;
+      viewportTop = rect.top;
+    } else if (canFitOnLeft) {
+      viewportLeft = rect.left - width - gap;
+      viewportTop = rect.top;
+    } else {
+      isBelow = true;
+
+      viewportLeft =
+        rect.left +
+        rect.width / 2 -
+        width / 2;
+
+      viewportTop = rect.bottom + gap;
+    }
 
     const maximumLeft =
-      window.scrollX +
       window.innerWidth -
       width -
       viewportPadding;
 
+    const estimatedHeight = Math.min(
+      450,
+      window.innerHeight -
+        viewportPadding * 2,
+    );
+
+    const maximumSideTop =
+      window.innerHeight -
+      estimatedHeight -
+      viewportPadding;
+
+    const resolvedTop = isBelow
+      ? viewportTop
+      : Math.max(
+          viewportPadding,
+          Math.min(viewportTop, maximumSideTop),
+        );
+
     setPosition({
-      top:
-        window.scrollY +
-        rect.top +
-        rect.width +
-        8,
-      left: Math.min(
-        Math.max(preferredLeft, minimumLeft),
-        maximumLeft,
-      ),
+      top: window.scrollY + resolvedTop,
+      left:
+        window.scrollX +
+        Math.max(
+          viewportPadding,
+          Math.min(viewportLeft, maximumLeft),
+        ),
       width,
     });
   }

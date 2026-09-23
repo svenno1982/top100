@@ -17,6 +17,7 @@ type Theme =
 
 type NavigationUser = {
   username: string | null;
+  role: "USER" | "ADMIN";
   status: "PENDING" | "APPROVED" | "SUSPENDED";
   isSiteOwner: boolean;
 };
@@ -86,11 +87,13 @@ export function TopNavigation({
   const pathname = usePathname();
   const [theme, setTheme] = useState<Theme>("dark");
 
-  const activeSection = pathname.endsWith("/films")
-    ? "films"
-    : pathname.endsWith("/songs")
-      ? "songs"
-      : "albums";
+    const activeSection = pathname.startsWith("/admin")
+    ? "admin"
+    : pathname.endsWith("/films")
+      ? "films"
+      : pathname.endsWith("/songs")
+        ? "songs"
+        : "albums";
 
   const hideNavigation = accessPagePrefixes.some(
     (prefix) =>
@@ -100,6 +103,18 @@ export function TopNavigation({
 
   const canManageCharts =
     user?.status === "APPROVED";
+
+      const visibleNavigationItems =
+    user?.role === "ADMIN"
+      ? [
+          ...navigationItems,
+          {
+            label: "Admin",
+            href: "/admin/users",
+            section: "admin",
+          },
+        ]
+      : navigationItems;
 
     useEffect(() => {
     const currentTheme =
@@ -165,7 +180,7 @@ export function TopNavigation({
 
         {canManageCharts && (
           <div className="flex items-center gap-1 rounded-xl border border-neutral-800 bg-neutral-900 p-1">
-            {navigationItems.map((item) => {
+            {visibleNavigationItems.map((item) => {
               const isActive =
                 activeSection === item.section;
 

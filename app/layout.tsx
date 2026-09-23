@@ -48,9 +48,10 @@ export default async function RootLayout({
 }: LayoutProps<"/">) {
     const session = await auth();
 
-  const navigationUser = session?.user?.id
+    const navigationUser = session?.user?.id
     ? {
         username: session.user.username,
+        role: session.user.role,
         status: session.user.status,
         isSiteOwner: session.user.isSiteOwner,
       }
