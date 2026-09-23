@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ReadOnlyChart } from "@/components/ReadOnlyChart";
 import { prisma } from "@/lib/prisma";
+import { updateProfileVisibility } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -194,11 +195,42 @@ export default async function UserProfilePage({
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {!profile.isProfilePublic && (
-                <span className="rounded-full border border-amber-800 bg-amber-950/50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300">
-                  Private profile
+            <div className="flex flex-wrap items-center gap-2 md:max-w-md md:justify-end">
+              {(isOwner || !profile.isProfilePublic) && (
+                <span
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${
+                    profile.isProfilePublic
+                      ? "border-emerald-700 bg-emerald-950/60 text-emerald-300"
+                      : "border-amber-800 bg-amber-950/50 text-amber-300"
+                  }`}
+                >
+                  {profile.isProfilePublic
+                    ? "Public profile"
+                    : "Private profile"}
                 </span>
+              )}
+
+              {isOwner && (
+                <form action={updateProfileVisibility}>
+                  <input
+                    type="hidden"
+                    name="visibility"
+                    value={
+                      profile.isProfilePublic
+                        ? "private"
+                        : "public"
+                    }
+                  />
+
+                  <button
+                    type="submit"
+                    className="rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                  >
+                    Make profile {profile.isProfilePublic
+                      ? "private"
+                      : "public"}
+                  </button>
+                </form>
               )}
 
               {profile.status !== "APPROVED" && (

@@ -230,7 +230,15 @@ export function TopNavigation({
 
           {user ? (
             <>
-              <div className="flex h-11 items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-3">
+              <a
+                href={
+                  user.username
+                    ? `/users/${encodeURIComponent(user.username)}`
+                    : "/onboarding"
+                }
+                title="View my profile"
+                className="flex h-11 items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-3 transition hover:border-neutral-700 hover:bg-neutral-800"
+              >
                 <span className="max-w-32 truncate text-sm font-semibold text-neutral-200">
                   {user.username ?? "Account"}
                 </span>
@@ -245,7 +253,7 @@ export function TopNavigation({
                     <path d="M3 6l4.5 4L12 4l4.5 6L21 6l-2 12H5L3 6Zm3.7 10h10.6l1-6.1-2.1 1.9L12 6.2l-4.2 5.6-2.1-1.9 1 6.1Z" />
                   </svg>
                 )}
-              </div>
+              </a>
 
               <button
                 type="button"
