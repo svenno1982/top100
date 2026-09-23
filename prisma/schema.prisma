@@ -95,22 +95,23 @@ model VerificationToken {
 
 model Album {
   id                 Int          @id @default(autoincrement())
-  ownerId            String?
-  position           Int          @unique
+  ownerId            String
+  position           Int
   title              String
   artist             String
   releaseYear        Int?
   artworkUrl         String?
   artworkSource      String?
-  musicBrainzId      String?      @unique
+  musicBrainzId      String?
   tracklistReleaseId String?
   tracklistFetchedAt DateTime?
-  owner              User?        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   tracks             AlbumTrack[]
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  @@index([ownerId])
+  @@unique([ownerId, position])
+  @@unique([ownerId, musicBrainzId])
 }
 
 model AlbumTrack {
@@ -129,34 +130,36 @@ model AlbumTrack {
 
 model Film {
   id          Int      @id @default(autoincrement())
-  ownerId     String?
-  position    Int      @unique
+  ownerId     String
+  position    Int
   title       String
   director    String?
   releaseYear Int?
   posterUrl   String?
-  tmdbId      Int?     @unique
-  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tmdbId      Int?
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([ownerId])
+  @@unique([ownerId, position])
+  @@unique([ownerId, tmdbId])
 }
 
 model Song {
   id           Int      @id @default(autoincrement())
-  ownerId      String?
-  position     Int      @unique
+  ownerId      String
+  position     Int
   title        String
   artist       String
   releaseYear  Int?
   artworkUrl   String?
-  appleTrackId String?  @unique
+  appleTrackId String?
   trackUrl     String?
   previewUrl   String?
-  owner        User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@index([ownerId])
+  @@unique([ownerId, position])
+  @@unique([ownerId, appleTrackId])
 }
