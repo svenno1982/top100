@@ -212,7 +212,7 @@ export default async function UserProfilePage({
                   href="/admin/users"
                   className="rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
                 >
-                  Back to Admin
+                  ← Back to users
                 </Link>
               )}
             </div>
@@ -238,6 +238,7 @@ export default async function UserProfilePage({
               <Link
                 key={tab.type}
                 href={`/users/${encodeURIComponent(profileUsername)}?chart=${tab.type}`}
+                replace
                 aria-current={isActive ? "page" : undefined}
                 className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition ${
                   isActive
